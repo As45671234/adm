@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { CartMetrics, Category, PricingMode, Product } from '../types';
 import noPhotoImage from '../components/img/no photo/no-photo.svg';
 import { getAvailablePricingModes, getBestDisplayPrice, getUnitLabel, getUnitPriceForMode } from '../services/pricing';
+import { toMediaUrl } from '../services/media';
 
 interface CatalogPageProps {
   categories: Category[];
@@ -157,7 +158,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ categories, onAddToCart, hasW
       .filter((p) => !selectedSub || String(p.segment || p.brandOrGroup || '').trim() === selectedSub) || [];
 
   const getProductImage = (product: Product) => {
-    const image = product.image?.trim();
+    const image = toMediaUrl(product.image?.trim());
     return image ? image : noPhotoImage;
   };
 
@@ -173,7 +174,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ categories, onAddToCart, hasW
       attrs.image3,
       ...fromAttrs,
     ]
-      .map((x) => String(x || '').trim())
+      .map((x) => toMediaUrl(String(x || '').trim()))
       .filter(Boolean)
       .filter((x, i, arr) => arr.indexOf(x) === i)
       .slice(0, 5);

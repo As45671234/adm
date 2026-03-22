@@ -1,4 +1,5 @@
 import React from 'react';
+import { toMediaUrl } from '../services/media';
 
 const PROJECTS = [
   {
@@ -61,7 +62,15 @@ const PartnersSection: React.FC<PartnersSectionProps> = ({
           {projects.map((project) => (
             <article key={project.title} className="adm-section p-4 md:p-5">
               <div className="rounded-2xl overflow-hidden h-56 mb-5 border border-[var(--adm-border)]">
-                <img src={project.image} alt={project.title} className="w-full h-full object-cover" loading="lazy" />
+                <img
+                  src={toMediaUrl(project.image) || '/logos/logoadm.jpg'}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = '/logos/logoadm.jpg';
+                  }}
+                />
               </div>
               <div className="text-[11px] uppercase font-black tracking-[0.16em] mb-2" style={{ color: 'var(--adm-accent)' }}>Площадь {project.area}</div>
               <h3 className="text-2xl font-black text-[var(--adm-ink)] mb-2 leading-tight">{project.title}</h3>

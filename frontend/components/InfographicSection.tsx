@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { toMediaUrl } from "../services/media";
 
 type Slide = {
   title: string;
@@ -122,7 +123,14 @@ export default function InfographicSection({
           </div>
 
           <div className="relative rounded-3xl overflow-hidden border border-[var(--adm-border)] shadow-2xl">
-            <img src={current.imageUrl} alt={current.title} className="w-full h-full object-cover" />
+            <img
+              src={toMediaUrl(current.imageUrl) || "/logos/logoadm.jpg"}
+              alt={current.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "/logos/logoadm.jpg";
+              }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/35 via-zinc-900/10 to-transparent" />
           </div>
         </div>

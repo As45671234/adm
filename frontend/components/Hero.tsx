@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HomeContent } from '../types';
+import { toMediaUrl } from '../services/media';
 
 const defaultSlides = [
   {
@@ -47,7 +48,14 @@ const Hero: React.FC<HeroProps> = ({ onConsultationClick, content }) => {
           key={idx}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === current ? 'z-10 opacity-100 pointer-events-auto' : 'z-0 opacity-0 pointer-events-none'}`}
         >
-          <img src={slide.img} alt={slide.title} className="absolute inset-0 w-full h-full object-cover" />
+          <img
+            src={toMediaUrl(slide.img) || '/logos/logoadm.jpg'}
+            alt={slide.title}
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = '/logos/logoadm.jpg';
+            }}
+          />
           <div className={`absolute inset-0 ${slide.color} pointer-events-none`} />
           <div className="relative z-20 flex h-full items-center">
             <div className="container mx-auto px-6">

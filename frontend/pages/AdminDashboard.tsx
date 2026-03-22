@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Category, HomeContent } from '../types';
 import { getAdminToken, fetchAdminCatalog, adminImportExcel, adminPatchProduct, adminDeleteProduct, adminCreateProduct, fetchCatalog, adminFetchOrders, adminFetchOrder, adminPatchOrder, adminDeleteOrder, adminExportOrder, adminFetchLeads, adminFetchLead, adminPatchLead, adminDeleteLead, adminUploadProductImage, adminPatchCategory, adminFetchCategories, adminCreateCategory, adminFetchSiteHomeContent, adminPatchSiteHomeContent } from '../services/api';
+import { toMediaUrl } from '../services/media';
 
 interface AdminDashboardProps {
   categories: Category[];
@@ -1198,7 +1199,14 @@ useEffect(() => {
                         </div>
                         {slide?.img ? (
                           <div className="mb-4 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 aspect-[16/9]">
-                            <img src={slide.img} alt={`slide-${idx + 1}`} className="w-full h-full object-cover" />
+                            <img
+                              src={toMediaUrl(slide.img) || '/logos/logoadm.jpg'}
+                              alt={`slide-${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/logos/logoadm.jpg';
+                              }}
+                            />
                           </div>
                         ) : null}
                         <div className="space-y-3">
@@ -1313,7 +1321,14 @@ useEffect(() => {
                         </div>
                         {slide?.imageUrl ? (
                           <div className="mb-4 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 aspect-[16/9]">
-                            <img src={slide.imageUrl} alt={`about-${idx + 1}`} className="w-full h-full object-cover" />
+                            <img
+                              src={toMediaUrl(slide.imageUrl) || '/logos/logoadm.jpg'}
+                              alt={`about-${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/logos/logoadm.jpg';
+                              }}
+                            />
                           </div>
                         ) : null}
                         <div className="space-y-3">
@@ -1411,7 +1426,14 @@ useEffect(() => {
                         </div>
                         {card?.image ? (
                           <div className="mb-4 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 aspect-[4/3]">
-                            <img src={card.image} alt={`project-${idx + 1}`} className="w-full h-full object-cover" />
+                            <img
+                              src={toMediaUrl(card.image) || '/logos/logoadm.jpg'}
+                              alt={`project-${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/logos/logoadm.jpg';
+                              }}
+                            />
                           </div>
                         ) : null}
                         <div className="space-y-3">
@@ -2165,7 +2187,7 @@ useEffect(() => {
                   const title = String(cat.title || "");
                   const draft = categoryImageDrafts[catId] ?? "";
                   const fallback = String((cat.items || []).find((it: any) => it?.image)?.image || "");
-                  const previewSrc = draft || String(cat.image || "") || fallback;
+                  const previewSrc = toMediaUrl(draft) || toMediaUrl(String(cat.image || "")) || toMediaUrl(fallback);
                   const isUploading = !!categoryImageUploading[catId];
                   const isSaving = !!categoryImageSaving[catId];
 
@@ -2173,7 +2195,14 @@ useEffect(() => {
                     <div key={catId} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
                       <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 mb-4">
                         {previewSrc ? (
-                          <img src={previewSrc} alt={title} className="w-full h-full object-cover" />
+                          <img
+                            src={previewSrc}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/logos/logoadm.jpg';
+                            }}
+                          />
                         ) : null}
                       </div>
 
@@ -2644,11 +2673,11 @@ useEffect(() => {
                 {editForm.image ? (
                   <div className="hidden md:flex items-center gap-3 rounded-2xl px-3 py-2" style={{ background: 'var(--adm-bg)', border: '1px solid var(--adm-border)' }}>
                     <img
-                      src={editForm.image}
+                      src={toMediaUrl(editForm.image)}
                       alt={editForm.name || 'preview'}
                       className="w-12 h-12 rounded-xl object-cover"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.src = '/logos/logoadm.jpg';
                       }}
                     />
                     <div className="text-xs font-semibold" style={{ color: 'var(--adm-ink-soft)' }}>Превью фото</div>

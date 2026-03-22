@@ -3,6 +3,7 @@ import { sendOrder } from '../services/api';
 import { CartItem } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 import { getUnitLabel } from '../services/pricing';
+import { toMediaUrl } from '../services/media';
 
 interface CartPageProps {
   cart: CartItem[];
@@ -166,9 +167,12 @@ const CartPage: React.FC<CartPageProps> = ({ cart, removeFromCart, updateQuantit
             >
               <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0" style={{ background: 'var(--adm-bg-soft)' }}>
                 <img
-                  src={item.image ? item.image : '/logos/logoadm.jpg'}
+                  src={toMediaUrl(item.image) || '/logos/logoadm.jpg'}
                   alt=""
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/logos/logoadm.jpg';
+                  }}
                 />
               </div>
 
