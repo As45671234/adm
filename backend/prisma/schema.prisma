@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  new
+  processing
+  completed
+  cancelled
+}
+
+enum LeadStatus {
+  new
+  processing
+  done
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  categoryId    String
+  categoryTitle String
+  name          String
+  brandOrGroup  String   @default("")
+  unit          String   @default("шт")
+  sku           String   @default("")
+  image         String   @default("")
+  description   String   @default("")
+  prices        Json?
+  attrs         Json?
+  inStock       Boolean  @default(true)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([active, inStock])
+  @@index([categoryId, name])
+}
+
+model CategoryMeta {
+  id         String   @id @default(cuid())
+  categoryId String   @unique
+  title      String   @default("")
+  image      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  customerName  String
+  customerPhone String
+  customerEmail String      @default("")
+  address       String      @default("")
+  comment       String      @default("")
+  status        OrderStatus @default(new)
+  total         Float       @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  productId  String  @default("")
+  name       String
+  sku        String  @default("")
+  unit       String  @default("шт")
+  image      String  @default("")
+  pricingMode String @default("piece")
+  meta       Json?
+  price      Float?
+  quantity   Float
+  lineTotal  Float?
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  name      String     @default("")
+  phone     String
+  email     String     @default("")
+  message   String     @default("")
+  status    LeadStatus @default(new)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([status, createdAt])
+}

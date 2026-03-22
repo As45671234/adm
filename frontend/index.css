@@ -1,0 +1,84 @@
+/* frontend/index.css */
+@import "./components/mainSliderInfographic.css";
+
+:root {
+  --adm-bg: #f3e8d8;
+  --adm-bg-soft: #e9dcc8;
+  --adm-paper: #fdf8f0;
+  --adm-paper-2: #f6edd9;
+  --adm-ink: #1c1510;
+  --adm-ink-soft: #6b5c48;
+  --adm-accent: #b5872a;
+  --adm-accent-dark: #8a6418;
+  --adm-accent-hover: #d4a848;
+  --adm-border: rgba(155, 115, 48, 0.18);
+  --adm-border-strong: rgba(155, 115, 48, 0.32);
+  --adm-shadow: 0 2px 16px rgba(90, 65, 20, 0.08), 0 1px 4px rgba(90, 65, 20, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--adm-ink);
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(ellipse 85% 55% at 10% 0%, rgba(201, 164, 76, 0.09), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 90% 90%, rgba(180, 135, 50, 0.06), transparent 50%),
+    var(--adm-bg);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Montserrat', 'Segoe UI', sans-serif;
+  letter-spacing: 0.005em;
+  font-weight: 800;
+}
+
+p,
+li,
+input,
+textarea,
+button {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+.adm-section {
+  background: var(--adm-paper);
+  border: 1px solid var(--adm-border);
+  border-radius: 20px;
+  box-shadow: var(--adm-shadow);
+}
+
+.adm-eyebrow {
+  color: var(--adm-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn  { animation: fadeIn  0.3s ease-out; }
+.animate-slideUp { animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-fade-up { animation: slideUp 0.5s ease-out; }
+
