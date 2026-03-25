@@ -1,6 +1,7 @@
 const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { readHomeContent } = require("../lib/homeContent");
+const { sendTelegramMessage, formatOrderMessage, formatLeadMessage } = require("../lib/telegram");
 
 function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -173,6 +174,12 @@ function publicRoutes(emailLimiter) {
       },
     });
 
+    // Send Telegram notification
+    const telegramText = formatLeadMessage(lead);
+    sendTelegramMessage(telegramText).catch((err) => {
+      console.error("Failed to send Telegram notification for lead:", err.message);
+    });
+
     res.json({ ok: true, id: String(lead.id) });
   });
 
@@ -180,6 +187,13 @@ function publicRoutes(emailLimiter) {
   router.post("/orders", emailLimiter, async (req, res) => {
     const order = await createOrderFromPayload(req.body || {});
     if (!order) return res.status(400).json({ error: "invalid order" });
+
+    // Send Telegram notification
+    const telegramText = formatOrderMessage(order);
+    sendTelegramMessage(telegramText).catch((err) => {
+      console.error("Failed to send Telegram notification for order:", err.message);
+    });
+
     res.json({ ok: true, id: String(order.id) });
   });
 
@@ -187,6 +201,13 @@ function publicRoutes(emailLimiter) {
   router.post("/orders/email", emailLimiter, async (req, res) => {
     const order = await createOrderFromPayload(req.body || {});
     if (!order) return res.status(400).json({ error: "invalid order" });
+
+    // Send Telegram notification
+    const telegramText = formatOrderMessage(order);
+    sendTelegramMessage(telegramText).catch((err) => {
+      console.error("Failed to send Telegram notification for order:", err.message);
+    });
+
     res.json({ ok: true, id: String(order.id) });
   });
 
