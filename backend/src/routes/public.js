@@ -113,6 +113,7 @@ async function createOrderFromPayload(payload) {
         })),
       },
     },
+    include: { items: true },
   });
 }
 

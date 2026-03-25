@@ -37,6 +37,7 @@ async function sendTelegramMessage(text) {
   }
 }
 
+
 function formatOrderMessage(order) {
   let items = "";
   if (Array.isArray(order.items) && order.items.length > 0) {
@@ -45,32 +46,35 @@ function formatOrderMessage(order) {
         let line = `• <b>${item.name}</b>`;
         if (item.sku) line += ` (${item.sku})`;
         line += ` - ${item.quantity} ${item.unit}`;
-        if (item.price) line += ` × ${item.price} = ${item.lineTotal}`;
+        if (item.price) {
+          const lineTotal = Number(item.lineTotal || 0).toLocaleString('ru-RU');
+          line += ` × ${item.price}₸ = <b>${lineTotal}₸</b>`;
+        }
         return line;
       })
       .join("\n");
   } else {
-    items = "Нет товаров в заказе";
+    items = "(Нет товаров)";
   }
 
+  const totalFormatted = Number(order.total || 0).toLocaleString('ru-RU');
   const text = `
 <b>📦 Новый заказ!</b>
 
-<b>ID:</b> ${order.id}
+<b>ID:</b> <code>${order.id}</code>
 <b>Клиент:</b> ${order.customerName}
 <b>Телефон:</b> <code>${order.customerPhone}</code>
 <b>Адрес:</b> ${order.address || "(не указан)"}
-<b>Сумма:</b> <b>${order.total}</b>
 
 <b>Товары:</b>
 ${items}
 
-${order.comment ? `<b>Комментарий:</b> ${order.comment}` : ""}
+<b>Сумма:</b> <b>${totalFormatted}₸</b>
+${order.comment ? `\n<b>Комментарий:</b> ${order.comment}` : ""}
 `;
 
   return text.trim();
 }
-
 function formatLeadMessage(lead) {
   const text = `
 <b>📝 Новая заявка!</b>
