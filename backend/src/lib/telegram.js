@@ -39,13 +39,24 @@ async function sendTelegramMessage(text) {
 
 
 function formatOrderMessage(order) {
+  const formatMetricPart = (value) => Number(value || 0).toLocaleString("ru-RU", { maximumFractionDigits: 3 });
+
   let items = "";
   if (Array.isArray(order.items) && order.items.length > 0) {
     items = order.items
       .map((item) => {
         let line = `• <b>${item.name}</b>`;
         if (item.sku) line += ` (${item.sku})`;
-        line += ` - ${item.quantity} ${item.unit}`;
+
+        const meta = item.meta && typeof item.meta === "object" ? item.meta : null;
+        if (item.pricingMode === "m2" && meta?.widthM && meta?.heightM) {
+          line += ` - ${formatMetricPart(meta.widthM)} м × ${formatMetricPart(meta.heightM)} м = ${formatMetricPart(item.quantity)} м²`;
+        } else if (item.pricingMode === "m3" && meta?.widthM && meta?.heightM && meta?.depthM) {
+          line += ` - ${formatMetricPart(meta.widthM)} м × ${formatMetricPart(meta.heightM)} м × ${formatMetricPart(meta.depthM)} м = ${formatMetricPart(item.quantity)} м³`;
+        } else {
+          line += ` - ${formatMetricPart(item.quantity)} ${item.unit}`;
+        }
+
         if (item.price) {
           const lineTotal = Number(item.lineTotal || 0).toLocaleString('ru-RU');
           line += ` × ${item.price}₸ = <b>${lineTotal}₸</b>`;
