@@ -4,19 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM Mebel Astana - Корпусная мебель на заказ</title>
-    <meta name="description" content="ADM Mebel Astana: корпусная мебель на заказ. Реализация дизайн-проектов, собственное производство, срок от 14 дней, гарантия 1 год, бесплатный замер.">
-    <meta name="keywords" content="корпусная мебель, мебель на заказ, кухня на заказ, шкаф на заказ, Астана, ADM mebel">
-    <meta property="og:title" content="ADM Mebel Astana - Корпусная мебель на заказ">
-    <meta property="og:description" content="Собственное производство мебели в Астане. Индивидуальные проекты, бесплатный замер, гарантия 1 год.">
-    <meta property="og:type" content="business.business">
-    <meta property="og:url" content="https://adm-mebel-astana.kz">
+    <title>ADM Mebel Astana - Корпусная мебель на заказ в Астане</title>
+    <meta name="description" content="Корпусная мебель на заказ в Астане: кухни, шкафы, гардеробные и ТВ-зоны. Собственное производство, индивидуальный проект и точные сроки.">
+    <meta name="keywords" content="корпусная мебель, мебель на заказ, кухня на заказ, шкаф на заказ, гардеробная, Астана, ADM mebel">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta property="og:title" content="ADM Mebel Astana - Корпусная мебель на заказ в Астане">
+    <meta property="og:description" content="Собственное производство мебели в Астане. Индивидуальные проекты, бесплатный замер и расчет стоимости.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://adm-mebel.kz/">
     <meta property="og:site_name" content="ADM Mebel Astana">
+    <meta property="og:image" content="https://adm-mebel.kz/logos/logoadm.jpg">
+    <meta property="og:locale" content="ru_KZ">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ADM Mebel Astana - мебель на заказ">
     <meta name="twitter:description" content="Корпусная мебель на заказ в Астане">
+    <meta name="twitter:image" content="https://adm-mebel.kz/logos/logoadm.jpg">
     <meta name="theme-color" content="#111111">
-    <link rel="canonical" href="https://adm-mebel-astana.kz/">
+    <link rel="canonical" href="https://adm-mebel.kz/">
+    <link rel="alternate" hreflang="ru-KZ" href="https://adm-mebel.kz/">
+    <link rel="alternate" hreflang="x-default" href="https://adm-mebel.kz/">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -45,10 +51,10 @@
 <script id="adm-local-business-jsonld" type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
+  "@type": ["FurnitureStore", "LocalBusiness"],
   "name": "ADM Mebel Astana",
   "description": "Корпусная мебель на заказ в Астане",
-  "url": "https://adm-mebel-astana.kz",
+  "url": "https://adm-mebel.kz",
   "telephone": "+77074064499",
   "address": {
     "@type": "PostalAddress",
@@ -62,9 +68,19 @@
     "opens": "09:00",
     "closes": "20:00"
   },
-  "logo": "https://adm-mebel-astana.kz/logos/logoadm.jpg",
+  "logo": "https://adm-mebel.kz/logos/logoadm.jpg",
+  "image": "https://adm-mebel.kz/logos/logoadm.jpg",
   "sameAs": ["https://wa.me/77074064499", "https://www.instagram.com/adm_mebel_astana"]
 }
+</script>
+<script>
+  (function () {
+    if (!location.hash || !location.hash.startsWith('#/')) return;
+    var targetPath = location.hash.slice(1);
+    if (!targetPath.startsWith('/')) targetPath = '/' + targetPath;
+    var target = targetPath + (location.search || '');
+    history.replaceState(null, '', target);
+  })();
 </script>
 </head>
 <body class="bg-gray-50 text-gray-900">

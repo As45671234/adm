@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CartItem, CartMetrics, Category, HomeContent, PricingMode, Product } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -12,6 +12,80 @@ import { fetchCatalog, fetchSiteHomeContent, getAdminToken, clearAdminToken } fr
 import { getUnitPriceForMode } from './services/pricing';
 
 type ToastState = { msg: string; id: number; open: boolean } | null;
+
+const SITE_URL = 'https://adm-mebel.kz';
+
+const SEO_BY_ROUTE: Record<string, { title: string; description: string; robots?: string }> = {
+  '/': {
+    title: 'ADM Mebel Astana - Корпусная мебель на заказ в Астане',
+    description: 'Корпусная мебель на заказ в Астане: кухни, шкафы, гардеробные и ТВ-зоны. Собственное производство, индивидуальный проект и точные сроки.',
+    robots: 'index,follow,max-image-preview:large',
+  },
+  '/catalog': {
+    title: 'Каталог мебели на заказ - ADM Mebel Astana',
+    description: 'Каталог корпусной мебели ADM Mebel: кухни, шкафы, гардеробные, прихожие и ТВ-зоны. Рассчитайте стоимость и отправьте заявку онлайн.',
+    robots: 'index,follow,max-image-preview:large',
+  },
+  '/cart': {
+    title: 'Оформление заявки - ADM Mebel Astana',
+    description: 'Оформите заявку на мебель по вашим параметрам. Укажите контактные данные и получите обратную связь от менеджера ADM Mebel.',
+    robots: 'noindex,follow',
+  },
+  '/admin': {
+    title: 'Вход в админ-панель - ADM Mebel',
+    description: 'Административный раздел сайта ADM Mebel.',
+    robots: 'noindex,nofollow',
+  },
+};
+
+const SeoManager: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const seo = SEO_BY_ROUTE[pathname] || SEO_BY_ROUTE['/'];
+    const canonicalUrl = `${SITE_URL}${pathname === '/' ? '/' : pathname}`;
+
+    document.title = seo.title;
+
+    const ensureMeta = (name: string, content: string) => {
+      let meta = document.head.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    const ensureOgMeta = (property: string, content: string) => {
+      let meta = document.head.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    ensureMeta('description', seo.description);
+    ensureMeta('robots', seo.robots || 'index,follow,max-image-preview:large');
+    ensureMeta('twitter:title', seo.title);
+    ensureMeta('twitter:description', seo.description);
+    ensureOgMeta('og:title', seo.title);
+    ensureOgMeta('og:description', seo.description);
+    ensureOgMeta('og:url', canonicalUrl);
+
+    let canonical = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+  }, [pathname]);
+
+  return null;
+};
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -57,7 +131,7 @@ const App: React.FC = () => {
       '@type': 'LocalBusiness',
       name: 'ADM Mebel Astana',
       description: 'Корпусная мебель на заказ в Астане',
-      url: 'https://adm-mebel-astana.kz',
+      url: 'https://adm-mebel.kz',
       telephone: phone,
       address: {
         '@type': 'PostalAddress',
@@ -71,7 +145,7 @@ const App: React.FC = () => {
         opens: '09:00',
         closes: '20:00',
       },
-      logo: 'https://adm-mebel-astana.kz/logos/logoadm.jpg',
+      logo: 'https://adm-mebel.kz/logos/logoadm.jpg',
       sameAs: [whatsappUrl.split('?')[0], instagram].filter(Boolean),
     }, null, 2);
   }, [homeContent, whatsappUrl]);
@@ -218,6 +292,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+      <SeoManager />
       <ScrollToTop />
       <div className="flex flex-col min-h-screen relative overflow-x-hidden">
         <Header
