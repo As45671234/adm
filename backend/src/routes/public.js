@@ -212,7 +212,36 @@ function publicRoutes(emailLimiter) {
     res.json({ ok: true, id: String(order.id) });
   });
 
+  // Public reviews: all active, ordered by sortOrder asc then createdAt desc
+  router.get("/reviews", async (req, res) => {
+    const featured = req.query.featured === "1";
+    const where = { active: true };
+    if (featured) where.featured = true;
+
+    const reviews = await prisma.review.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+
+    res.json({ reviews: reviews.map(mapReview) });
+  });
+
   return router;
+}
+
+function mapReview(r) {
+  return {
+    id: String(r.id),
+    authorName: r.authorName,
+    authorRole: r.authorRole || "",
+    text: r.text || "",
+    videoUrl: r.videoUrl || "",
+    image: r.image || "",
+    rating: r.rating || 5,
+    featured: !!r.featured,
+    sortOrder: r.sortOrder || 0,
+    createdAt: r.createdAt,
+  };
 }
 
 module.exports = publicRoutes;

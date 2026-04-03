@@ -50,7 +50,20 @@ export interface CartMetrics {
   widthM: number;
   heightM: number;
   depthM?: number;
-  depthM?: number;
+}
+
+export interface Review {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  text: string;
+  videoUrl: string;
+  image: string;
+  rating: number;
+  featured: boolean;
+  sortOrder: number;
+  active?: boolean;
+  createdAt?: string;
 }
 
 export interface Category {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { CartItem, CartMetrics, Category, HomeContent, PricingMode, Product } from './types';
+import { CartItem, CartMetrics, Category, HomeContent, PricingMode, Product, Review } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -8,7 +8,9 @@ import CatalogPage from './pages/CatalogPage';
 import CartPage from './pages/CartPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
+import ReviewsPage from './pages/ReviewsPage';
 import { fetchCatalog, fetchSiteHomeContent, getAdminToken, clearAdminToken } from './services/api';
+import { fetchReviews } from './services/api';
 import { getUnitPriceForMode } from './services/pricing';
 
 type ToastState = { msg: string; id: number; open: boolean } | null;
@@ -30,6 +32,11 @@ const SEO_BY_ROUTE: Record<string, { title: string; description: string; robots?
     title: 'Оформление заявки - ADM Mebel Astana',
     description: 'Оформите заявку на мебель по вашим параметрам. Укажите контактные данные и получите обратную связь от менеджера ADM Mebel.',
     robots: 'noindex,follow',
+  },
+  '/reviews': {
+    title: 'Отзывы клиентов - ADM Mebel Astana',
+    description: 'Реальные отзывы клиентов ADM Mebel: текстовые и видео-отзывы о корпусной мебели на заказ в Астане.',
+    robots: 'index,follow,max-image-preview:large',
   },
   '/admin': {
     title: 'Вход в админ-панель - ADM Mebel',
@@ -100,6 +107,7 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [homeContent, setHomeContent] = useState<HomeContent | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   const [toast, setToast] = useState<ToastState>(null);
   const [toastTimer, setToastTimer] = useState<number | null>(null);
@@ -212,6 +220,12 @@ const App: React.FC = () => {
       .catch(() => setHomeContent(null));
   }, []);
 
+  useEffect(() => {
+    fetchReviews()
+      .then((data) => setReviews((data.reviews || []) as Review[]))
+      .catch(() => setReviews([]));
+  }, []);
+
   // Admin session (token)
   useEffect(() => {
     const t = getAdminToken();
@@ -316,7 +330,7 @@ const App: React.FC = () => {
 
         <main className="flex-grow pt-24 md:pt-32">
           <Routes>
-            <Route path="/" element={<HomePage categories={categories} onAddToCart={addToCart} content={homeContent} />} />
+            <Route path="/" element={<HomePage categories={categories} onAddToCart={addToCart} content={homeContent} reviews={reviews} />} />
             <Route
               path="/catalog"
               element={<CatalogPage categories={categories} onAddToCart={addToCart} hasWhatsapp={Boolean(whatsappPhone)} />}
@@ -332,6 +346,7 @@ const App: React.FC = () => {
                 />
               }
             />
+            <Route path="/reviews" element={<ReviewsPage />} />
             <Route
               path="/admin"
               element={

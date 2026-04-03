@@ -3,16 +3,17 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Hero from '../components/Hero';
 import LeadForm from '../components/LeadForm';
-import PartnersSection from "../components/PartnersSection";
 import AboutSlider from "../components/InfographicSection";
-import { Category, HomeContent, Product } from '../types';
+import ReviewsSection from '../components/ReviewsSection';
+import { Category, HomeContent, Product, Review } from '../types';
 
 interface HomePageProps {
   categories: Category[];
   onAddToCart: (p: Product) => void;
   content?: HomeContent | null;
+  reviews?: Review[];
 }
-const HomePage: React.FC<HomePageProps> = ({ content }) => {
+const HomePage: React.FC<HomePageProps> = ({ content, reviews = [] }) => {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadNotice, setLeadNotice] = useState<null | { title: string; message: string }>(null);
   const contacts = content?.contacts;
@@ -107,12 +108,7 @@ const HomePage: React.FC<HomePageProps> = ({ content }) => {
         slides={content?.about?.slides}
       />
 
-      <PartnersSection
-        sectionLabel={content?.projects?.sectionLabel}
-        title={content?.projects?.title}
-        description={content?.projects?.description}
-        projects={content?.projects?.cards}
-      />
+      <ReviewsSection reviews={reviews} />
 
       {/* Contacts Section */}
       <section className="py-24" id="contacts">

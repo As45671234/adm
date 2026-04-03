@@ -97,3 +97,20 @@ model Lead {
 
   @@index([status, createdAt])
 }
+
+model Review {
+  id         String   @id @default(cuid())
+  authorName String
+  authorRole String   @default("")
+  text       String   @default("")
+  videoUrl   String   @default("")
+  image      String   @default("")
+  rating     Int      @default(5)
+  featured   Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([active, featured, sortOrder])
+}

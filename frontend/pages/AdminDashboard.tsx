@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
-import { Category, HomeContent } from '../types';
-import { getAdminToken, fetchAdminCatalog, adminImportExcel, adminPatchProduct, adminDeleteProduct, adminCreateProduct, fetchCatalog, adminFetchOrders, adminFetchOrder, adminPatchOrder, adminDeleteOrder, adminExportOrder, adminFetchLeads, adminFetchLead, adminPatchLead, adminDeleteLead, adminUploadProductImage, adminPatchCategory, adminFetchCategories, adminCreateCategory, adminFetchSiteHomeContent, adminPatchSiteHomeContent } from '../services/api';
+import { Category, HomeContent, Review } from '../types';
+import { getAdminToken, fetchAdminCatalog, adminImportExcel, adminPatchProduct, adminDeleteProduct, adminCreateProduct, fetchCatalog, adminFetchOrders, adminFetchOrder, adminPatchOrder, adminDeleteOrder, adminExportOrder, adminFetchLeads, adminFetchLead, adminPatchLead, adminDeleteLead, adminUploadProductImage, adminPatchCategory, adminFetchCategories, adminCreateCategory, adminFetchSiteHomeContent, adminPatchSiteHomeContent, adminFetchReviews, adminCreateReview, adminPatchReview, adminDeleteReview, adminUploadReviewImage } from '../services/api';
 import { toMediaUrl } from '../services/media';
 
 interface AdminDashboardProps {
@@ -118,6 +118,32 @@ function formatCharacteristicLabel(key: string) {
   if (PRODUCT_ATTR_LABELS[normalized]) return PRODUCT_ATTR_LABELS[normalized];
   const withSpaces = normalized.replace(/_/g, ' ').trim();
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+}
+
+type ReviewForm = {
+  authorName: string;
+  authorRole: string;
+  text: string;
+  videoUrl: string;
+  image: string;
+  rating: number;
+  featured: boolean;
+  sortOrder: number;
+  active: boolean;
+};
+
+function createEmptyReviewForm(): ReviewForm {
+  return {
+    authorName: '',
+    authorRole: '',
+    text: '',
+    videoUrl: '',
+    image: '',
+    rating: 5,
+    featured: false,
+    sortOrder: 0,
+    active: true,
+  };
 }
 
 function buildProductFormFromProduct(prod: any, categoryTitle: string): ProductEditorForm {
@@ -290,7 +316,7 @@ function normalizeHomeContentDraft(content?: HomeContent | null): HomeContent {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setCategories, setHomeContent, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'import' | 'orders' | 'leads' | 'categories' | 'homepage'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'import' | 'orders' | 'leads' | 'categories' | 'homepage' | 'reviews'>('inventory');
   const [isImporting, setIsImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [invPage, setInvPage] = useState(1);
@@ -352,6 +378,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setCategories, setHomeC
   const [activeLead, setActiveLead] = useState<any | null>(null);
   const [deleteLeadConfirmId, setDeleteLeadConfirmId] = useState<string>('');
 
+  // Reviews
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewSaving, setReviewSaving] = useState<Record<string, boolean>>({});
+  const [reviewImageUploading, setReviewImageUploading] = useState<Record<string, boolean>>({});
+  const [addReviewForm, setAddReviewForm] = useState<ReviewForm>(createEmptyReviewForm());
+  const [addReviewSaving, setAddReviewSaving] = useState(false);
+  const [addReviewImageUploading, setAddReviewImageUploading] = useState(false);
+
   const [homeContentDraft, setHomeContentDraft] = useState<HomeContent | null>(null);
   const [homeLoading, setHomeLoading] = useState(false);
   const [homeSaving, setHomeSaving] = useState(false);
@@ -395,6 +430,117 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setCategories, setHomeC
       setActiveLead(data.lead);
     } finally {
       setLeadLoading(false);
+    }
+  };
+
+  const loadReviews = async () => {
+    if (!token) return;
+    setReviewsLoading(true);
+    try {
+      const data = await adminFetchReviews(token);
+      setReviews((data.reviews || []) as Review[]);
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка загрузки отзывов');
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const updateReviewField = (id: string, patch: Partial<Review>) => {
+    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  };
+
+  const saveReview = async (review: Review) => {
+    if (!token || !review?.id) return;
+    setReviewSaving((prev) => ({ ...prev, [review.id]: true }));
+    try {
+      const res = await adminPatchReview(token, review.id, {
+        authorName: review.authorName,
+        authorRole: review.authorRole,
+        text: review.text,
+        videoUrl: review.videoUrl,
+        image: review.image,
+        rating: review.rating,
+        featured: review.featured,
+        sortOrder: review.sortOrder,
+        active: review.active,
+      });
+      updateReviewField(review.id, (res.review || {}) as Partial<Review>);
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка сохранения отзыва');
+    } finally {
+      setReviewSaving((prev) => ({ ...prev, [review.id]: false }));
+    }
+  };
+
+  const removeReview = async (id: string) => {
+    if (!token || !id) return;
+    if (!confirm('Удалить отзыв?')) return;
+    try {
+      await adminDeleteReview(token, id);
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка удаления отзыва');
+    }
+  };
+
+  const uploadImageForAddReview = async (file?: File) => {
+    if (!file || !token) return;
+    setAddReviewImageUploading(true);
+    try {
+      const res = await adminUploadReviewImage(token, file);
+      setAddReviewForm((prev) => ({ ...prev, image: String(res.imageUrl || '') }));
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка загрузки фото');
+    } finally {
+      setAddReviewImageUploading(false);
+    }
+  };
+
+  const uploadImageForExistingReview = async (id: string, file?: File) => {
+    if (!file || !token || !id) return;
+    setReviewImageUploading((prev) => ({ ...prev, [id]: true }));
+    try {
+      const res = await adminUploadReviewImage(token, file);
+      updateReviewField(id, { image: String(res.imageUrl || '') });
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка загрузки фото');
+    } finally {
+      setReviewImageUploading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const createReview = async () => {
+    if (!token) return;
+    if (!addReviewForm.authorName.trim()) {
+      alert('Укажите имя клиента');
+      return;
+    }
+    if (!addReviewForm.text.trim() && !addReviewForm.videoUrl.trim()) {
+      alert('Добавьте текст или видео URL');
+      return;
+    }
+
+    setAddReviewSaving(true);
+    try {
+      const res = await adminCreateReview(token, {
+        authorName: addReviewForm.authorName.trim(),
+        authorRole: addReviewForm.authorRole.trim(),
+        text: addReviewForm.text.trim(),
+        videoUrl: addReviewForm.videoUrl.trim(),
+        image: addReviewForm.image.trim(),
+        rating: addReviewForm.rating,
+        featured: addReviewForm.featured,
+        sortOrder: addReviewForm.sortOrder,
+        active: addReviewForm.active,
+      });
+      setReviews((prev) => [res.review as Review, ...prev]);
+      setAddReviewForm(createEmptyReviewForm());
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка создания отзыва');
+    } finally {
+      setAddReviewSaving(false);
     }
   };
 
@@ -611,6 +757,12 @@ useEffect(() => {
   useEffect(() => {
     if (activeTab !== 'homepage') return;
     loadHomeContent();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'reviews') return;
+    loadReviews();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -1145,6 +1297,12 @@ useEffect(() => {
           className={`px-8 py-4 rounded-2xl font-bold transition-all uppercase text-xs tracking-widest ${activeTab === 'categories' ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white text-gray-400 hover:bg-blue-50'}`}
         >
           <i className="fas fa-images mr-2"></i> Категории
+        </button>
+        <button
+          onClick={() => setActiveTab('reviews')}
+          className={`px-8 py-4 rounded-2xl font-bold transition-all uppercase text-xs tracking-widest ${activeTab === 'reviews' ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white text-gray-400 hover:bg-blue-50'}`}
+        >
+          <i className="fas fa-star mr-2"></i> Отзывы
         </button>
       </div>
 
@@ -2136,6 +2294,270 @@ useEffect(() => {
                 </div>
               </div>
             ) : null}
+          </div>
+
+        ) : activeTab === 'reviews' ? (
+          <div className="p-10">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4 mb-6">
+              <div className="flex-1">
+                <h3 className="text-2xl font-black text-blue-900 uppercase tracking-tighter">Отзывы клиентов</h3>
+                <p className="text-gray-500 text-sm mt-1">Текстовые и видео отзывы (YouTube, Instagram Reels, TikTok, MP4). На главной показываются 3 featured отзыва.</p>
+              </div>
+              <button
+                onClick={loadReviews}
+                className="px-6 py-3 rounded-2xl bg-blue-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-200"
+              >
+                Обновить
+              </button>
+            </div>
+
+            <div className="mb-8 rounded-3xl p-6 border border-blue-100 bg-blue-50/60">
+              <div className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4">Добавить отзыв</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <input
+                  className="w-full px-4 py-3 rounded-2xl border border-blue-200 bg-white text-sm"
+                  placeholder="Имя клиента"
+                  value={addReviewForm.authorName}
+                  onChange={(e) => setAddReviewForm((prev) => ({ ...prev, authorName: e.target.value }))}
+                />
+                <input
+                  className="w-full px-4 py-3 rounded-2xl border border-blue-200 bg-white text-sm"
+                  placeholder="Роль/объект (например: Владелец квартиры в Астане)"
+                  value={addReviewForm.authorRole}
+                  onChange={(e) => setAddReviewForm((prev) => ({ ...prev, authorRole: e.target.value }))}
+                />
+                <textarea
+                  className="w-full px-4 py-3 rounded-2xl border border-blue-200 bg-white text-sm min-h-[110px] lg:col-span-2"
+                  placeholder="Текст отзыва"
+                  value={addReviewForm.text}
+                  onChange={(e) => setAddReviewForm((prev) => ({ ...prev, text: e.target.value }))}
+                />
+                <input
+                  className="w-full px-4 py-3 rounded-2xl border border-blue-200 bg-white text-sm lg:col-span-2"
+                  placeholder="URL видео (YouTube/Instagram Reels/TikTok/MP4), если это видео-отзыв"
+                  value={addReviewForm.videoUrl}
+                  onChange={(e) => setAddReviewForm((prev) => ({ ...prev, videoUrl: e.target.value }))}
+                />
+                <input
+                  className="w-full px-4 py-3 rounded-2xl border border-blue-200 bg-white text-sm"
+                  placeholder="URL фото проекта (результат работы)"
+                  value={addReviewForm.image}
+                  onChange={(e) => setAddReviewForm((prev) => ({ ...prev, image: e.target.value }))}
+                />
+                {!!addReviewForm.image && (
+                  <div className="w-full flex items-center gap-3 rounded-2xl border border-blue-100 bg-white px-3 py-2">
+                    <img
+                      src={toMediaUrl(addReviewForm.image)}
+                      alt="preview-new-review"
+                      className="w-12 h-12 rounded-full object-cover border border-blue-200"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <div className="text-xs text-gray-500">Превью фото проекта</div>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border text-xs font-black uppercase tracking-widest ${addReviewImageUploading ? 'cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200' : 'cursor-pointer bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}>
+                    <i className={`fas ${addReviewImageUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
+                    {addReviewImageUploading ? 'Загрузка...' : 'Загрузить фото'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={addReviewImageUploading}
+                      onChange={(e) => {
+                        uploadImageForAddReview(e.target.files?.[0]);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-600">Рейтинг</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      className="w-20 px-3 py-2 rounded-xl border border-blue-200 bg-white text-sm font-semibold"
+                      value={addReviewForm.rating}
+                      onChange={(e) => setAddReviewForm((prev) => ({ ...prev, rating: Math.min(5, Math.max(1, Number(e.target.value) || 1)) }))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-600">Порядок</label>
+                    <input
+                      type="number"
+                      className="w-24 px-3 py-2 rounded-xl border border-blue-200 bg-white text-sm font-semibold"
+                      value={addReviewForm.sortOrder}
+                      onChange={(e) => setAddReviewForm((prev) => ({ ...prev, sortOrder: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 flex-wrap">
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={addReviewForm.featured}
+                      onChange={(e) => setAddReviewForm((prev) => ({ ...prev, featured: e.target.checked }))}
+                    />
+                    Показать на главной
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={addReviewForm.active}
+                      onChange={(e) => setAddReviewForm((prev) => ({ ...prev, active: e.target.checked }))}
+                    />
+                    Активен
+                  </label>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={createReview}
+                  disabled={addReviewSaving}
+                  className="px-6 py-3 rounded-2xl bg-blue-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-200 disabled:opacity-50"
+                >
+                  {addReviewSaving ? 'Сохранение...' : 'Создать отзыв'}
+                </button>
+              </div>
+            </div>
+
+            {reviewsLoading ? (
+              <div className="p-10 text-center text-gray-500"><i className="fas fa-spinner fa-spin mr-2"></i>Загрузка отзывов...</div>
+            ) : reviews.length === 0 ? (
+              <div className="p-16 text-center bg-gray-50 rounded-3xl border border-gray-100">
+                <div className="text-gray-400 text-4xl mb-4"><i className="fas fa-comments"></i></div>
+                <div className="font-bold text-gray-700">Пока нет отзывов</div>
+                <div className="text-sm text-gray-500 mt-2">Добавьте первый отзыв через форму выше.</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((r) => (
+                  <div key={r.id} className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="space-y-3">
+                        <input
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm"
+                          value={r.authorName}
+                          onChange={(e) => updateReviewField(r.id, { authorName: e.target.value })}
+                          placeholder="Имя"
+                        />
+                        <input
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm"
+                          value={r.authorRole}
+                          onChange={(e) => updateReviewField(r.id, { authorRole: e.target.value })}
+                          placeholder="Роль / объект"
+                        />
+                        <input
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm"
+                          value={r.image || ''}
+                          onChange={(e) => updateReviewField(r.id, { image: e.target.value })}
+                          placeholder="URL фото проекта"
+                        />
+                        {!!r.image && (
+                          <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2">
+                            <img
+                              src={toMediaUrl(r.image)}
+                              alt={`preview-${r.authorName || 'review'}`}
+                              className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <div className="text-xs text-gray-500">Текущее фото проекта</div>
+                          </div>
+                        )}
+                        <label className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border text-xs font-black uppercase tracking-widest ${reviewImageUploading[r.id] ? 'cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200' : 'cursor-pointer bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}>
+                          <i className={`fas ${reviewImageUploading[r.id] ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
+                          {reviewImageUploading[r.id] ? 'Загрузка...' : 'Загрузить фото проекта'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={!!reviewImageUploading[r.id]}
+                            onChange={(e) => {
+                              uploadImageForExistingReview(r.id, e.target.files?.[0]);
+                              e.currentTarget.value = '';
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="lg:col-span-2 space-y-3">
+                        <textarea
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm min-h-[120px]"
+                          value={r.text}
+                          onChange={(e) => updateReviewField(r.id, { text: e.target.value })}
+                          placeholder="Текст отзыва"
+                        />
+                        <input
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm"
+                          value={r.videoUrl}
+                          onChange={(e) => updateReviewField(r.id, { videoUrl: e.target.value })}
+                          placeholder="Видео URL (YouTube/Instagram Reels/TikTok/MP4)"
+                        />
+
+                        <div className="flex flex-wrap gap-4 items-center">
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-600">Рейтинг</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={5}
+                              className="w-20 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold"
+                              value={r.rating || 5}
+                              onChange={(e) => updateReviewField(r.id, { rating: Math.min(5, Math.max(1, Number(e.target.value) || 1)) })}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-600">Порядок</label>
+                            <input
+                              type="number"
+                              className="w-24 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold"
+                              value={r.sortOrder || 0}
+                              onChange={(e) => updateReviewField(r.id, { sortOrder: Number(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={!!r.featured}
+                              onChange={(e) => updateReviewField(r.id, { featured: e.target.checked })}
+                            />
+                            На главной
+                          </label>
+                          <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={r.active !== false}
+                              onChange={(e) => updateReviewField(r.id, { active: e.target.checked })}
+                            />
+                            Активен
+                          </label>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => removeReview(r.id)}
+                            className="px-4 py-2 rounded-xl bg-red-50 text-red-600 font-black text-xs uppercase tracking-widest"
+                          >
+                            Удалить
+                          </button>
+                          <button
+                            onClick={() => saveReview(r)}
+                            disabled={!!reviewSaving[r.id]}
+                            className="px-4 py-2 rounded-xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest disabled:opacity-50"
+                          >
+                            {reviewSaving[r.id] ? 'Сохранение...' : 'Сохранить'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         ) : activeTab === 'categories' ? (

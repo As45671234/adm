@@ -632,4 +632,111 @@ router.delete("/leads/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ──────────────────────────────────────────────────────────────
+// REVIEWS
+// ──────────────────────────────────────────────────────────────
+function mapReview(r) {
+  return {
+    id: String(r.id),
+    authorName: r.authorName,
+    authorRole: r.authorRole || "",
+    text: r.text || "",
+    videoUrl: r.videoUrl || "",
+    image: r.image || "",
+    rating: typeof r.rating === "number" ? r.rating : 5,
+    featured: !!r.featured,
+    sortOrder: typeof r.sortOrder === "number" ? r.sortOrder : 0,
+    active: !!r.active,
+    createdAt: r.createdAt,
+  };
+}
+
+router.get("/reviews", requireAdmin, async (req, res) => {
+  const reviews = await prisma.review.findMany({
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+  });
+  res.json({ reviews: reviews.map(mapReview) });
+});
+
+router.post("/reviews", requireAdmin, async (req, res) => {
+  const body = req.body || {};
+  const authorName = String(body.authorName || "").trim();
+  if (!authorName) return res.status(400).json({ error: "authorName is required" });
+
+  const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
+  const sortOrder = Number(body.sortOrder) || 0;
+
+  const review = await prisma.review.create({
+    data: {
+      authorName,
+      authorRole: String(body.authorRole || "").trim(),
+      text: String(body.text || "").trim(),
+      videoUrl: String(body.videoUrl || "").trim(),
+      image: String(body.image || "").trim(),
+      rating,
+      featured: !!body.featured,
+      sortOrder,
+      active: body.active !== undefined ? !!body.active : true,
+    },
+  });
+
+  res.json({ review: mapReview(review) });
+});
+
+router.patch("/reviews/:id", requireAdmin, async (req, res) => {
+  const id = req.params.id;
+  const body = req.body || {};
+
+  const existing = await prisma.review.findUnique({ where: { id } });
+  if (!existing) return res.status(404).json({ error: "review not found" });
+
+  const data = {};
+  if (body.authorName !== undefined) data.authorName = String(body.authorName || "").trim();
+  if (body.authorRole !== undefined) data.authorRole = String(body.authorRole || "").trim();
+  if (body.text !== undefined) data.text = String(body.text || "").trim();
+  if (body.videoUrl !== undefined) data.videoUrl = String(body.videoUrl || "").trim();
+  if (body.image !== undefined) data.image = String(body.image || "").trim();
+  if (body.rating !== undefined) data.rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
+  if (body.featured !== undefined) data.featured = !!body.featured;
+  if (body.sortOrder !== undefined) data.sortOrder = Number(body.sortOrder) || 0;
+  if (body.active !== undefined) data.active = !!body.active;
+
+  const review = await prisma.review.update({ where: { id }, data });
+  res.json({ review: mapReview(review) });
+});
+
+router.delete("/reviews/:id", requireAdmin, async (req, res) => {
+  const existing = await prisma.review.findUnique({ where: { id: req.params.id } });
+  if (!existing) return res.status(404).json({ error: "review not found" });
+  await prisma.review.delete({ where: { id: req.params.id } });
+  res.json({ ok: true });
+});
+
+// Upload image for review (reuse product-image optimizer)
+router.post("/reviews/upload-image", requireAdmin, (req, res) => {
+  imageUpload.single("file")(req, res, async (err) => {
+    if (err && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "file too large" });
+    }
+    if (err) {
+      return res.status(400).json({ error: "upload failed", details: String(err.message || err) });
+    }
+    if (!req.file) return res.status(400).json({ error: "file is required" });
+
+    try {
+      const base = String(req.file.originalname || "review").replace(/\.[^.]+$/, "");
+      const imageUrl = await saveOptimizedProductImage({
+        buffer: req.file.buffer,
+        imagesDir: productImagesDir,
+        baseSlug: `review-${base}`,
+        maxWidth: 1200,
+        quality: 85,
+      });
+      return res.json({ ok: true, imageUrl });
+    } catch (e) {
+      return res.status(500).json({ error: "image optimization failed", details: String(e && e.message ? e.message : e) });
+    }
+  });
+});
+
 module.exports = router;

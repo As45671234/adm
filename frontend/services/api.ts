@@ -269,3 +269,65 @@ export async function adminDeleteLead(token: string, id: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// --------------------
+// Reviews (Public)
+// --------------------
+export async function fetchReviews(featured?: boolean) {
+  const qs = featured ? '?featured=1' : '';
+  return request<{ reviews: any[] }>(`/api/reviews${qs}`);
+}
+
+// --------------------
+// Reviews (Admin)
+// --------------------
+export async function adminFetchReviews(token: string) {
+  return request<{ reviews: any[] }>('/api/admin/reviews', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateReview(token: string, body: any) {
+  return request<{ review: any }>('/api/admin/reviews', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function adminPatchReview(token: string, id: string, patch: any) {
+  return request<{ review: any }>(`/api/admin/reviews/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function adminDeleteReview(token: string, id: string) {
+  return request<{ ok: boolean }>(`/api/admin/reviews/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUploadReviewImage(token: string, file: File) {
+  const fd = new FormData();
+  fd.append('file', file);
+
+  const res = await fetch('/api/admin/reviews/upload-image', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+
+  if (!res.ok) {
+    let msg = 'Ошибка загрузки фото';
+    try {
+      const data = await res.json();
+      msg = data?.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+
+  return res.json() as Promise<{ ok: boolean; imageUrl: string }>;
+}

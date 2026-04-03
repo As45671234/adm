@@ -125,6 +125,33 @@ const Footer: React.FC<FooterProps> = ({ content }) => {
                     <i className="fab fa-whatsapp"></i>
                   </span>
                 )}
+
+                {instagramUrl ? (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 10,
+                      background: 'rgba(201,164,76,0.07)',
+                      border: '1px solid rgba(201,164,76,0.18)',
+                      color: '#c9a44c',
+                      fontSize: '1.05rem',
+                      textDecoration: 'none',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(201,164,76,0.16)'; el.style.borderColor = 'rgba(201,164,76,0.38)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(201,164,76,0.07)'; el.style.borderColor = 'rgba(201,164,76,0.18)'; }}
+                    aria-label="Instagram"
+                  >
+                    <i className="fab fa-instagram"></i>
+                  </a>
+                ) : null}
               </div>
             </div>
 
