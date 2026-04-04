@@ -123,6 +123,10 @@ const App: React.FC = () => {
     () => (whatsappPhone ? `https://wa.me/${whatsappPhone}?text=${whatsappText}` : ''),
     [whatsappPhone, whatsappText]
   );
+  const instagramUrl = useMemo(
+    () => String(homeContent?.contacts?.instagramUrl || import.meta.env.VITE_INSTAGRAM_URL || 'https://www.instagram.com/adm_mebel_astana/').trim(),
+    [homeContent]
+  );
 
   useEffect(() => {
     const script = document.getElementById('adm-local-business-jsonld');
@@ -370,17 +374,31 @@ const App: React.FC = () => {
 
         <Footer content={homeContent} />
       </div>
-      {whatsappUrl ? (
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed right-5 bottom-5 z-[9999] w-14 h-14 rounded-full bg-green-500 text-white shadow-2xl flex items-center justify-center hover:bg-green-600"
-          aria-label="WhatsApp"
-        >
-          <i className="fab fa-whatsapp text-2xl"></i>
-        </a>
-      ) : null}
+      <div className="fixed right-5 bottom-5 z-[9999] flex flex-col gap-3">
+        {instagramUrl ? (
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105"
+            style={{ background: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)' }}
+            aria-label="Instagram"
+          >
+            <i className="fab fa-instagram text-2xl"></i>
+          </a>
+        ) : null}
+        {whatsappUrl ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-14 h-14 rounded-full bg-green-500 text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 hover:bg-green-600"
+            aria-label="WhatsApp"
+          >
+            <i className="fab fa-whatsapp text-2xl"></i>
+          </a>
+        ) : null}
+      </div>
 </Router>
   );
 };
