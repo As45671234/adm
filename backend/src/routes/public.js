@@ -2,6 +2,7 @@ const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { readHomeContent } = require("../lib/homeContent");
 const { sendTelegramMessage, formatOrderMessage, formatLeadMessage } = require("../lib/telegram");
+const { addSubscriber, getSubscribers } = require("../lib/telegramSubscribers");
 
 function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -224,6 +225,61 @@ function publicRoutes(emailLimiter) {
     });
 
     res.json({ reviews: reviews.map(mapReview) });
+  });
+
+  // Telegram webhook — receives updates from Telegram
+  // After registering webhook via:
+  //   https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://adm-mebel.kz/api/telegram/webhook
+  router.post("/telegram/webhook", (req, res) => {
+    // Always respond 200 immediately so Telegram doesn't retry
+    res.sendStatus(200);
+
+    try {
+      const update = req.body;
+      const message = update?.message;
+      if (!message) return;
+
+      const chatId = message?.chat?.id;
+      const text = String(message?.text || "").trim();
+      const firstName = message?.from?.first_name || "Пользователь";
+
+      if (!chatId) return;
+
+      if (text === "/start" || text.startsWith("/start ")) {
+        const isNew = addSubscriber(chatId);
+
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (!token) return;
+
+        const reply = isNew
+          ? `👋 Привет, ${firstName}!\n\nВы подписались на уведомления ADM Mebel Astana. Теперь вы будете получать сообщения о новых заказах и заявках.`
+          : `✅ Вы уже подписаны на уведомления ADM Mebel.`;
+
+        const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(reply)}`;
+        require("https").get(url).on("error", () => {});
+      } else if (text === "/stop") {
+        const { removeSubscriber } = require("../lib/telegramSubscribers");
+        removeSubscriber(chatId);
+
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (!token) return;
+        const reply = "❌ Вы отписались от уведомлений ADM Mebel.";
+        const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(reply)}`;
+        require("https").get(url).on("error", () => {});
+      } else if (text === "/subscribers") {
+        // Only show to existing subscribers
+        const subs = getSubscribers();
+        if (!subs.includes(String(chatId))) return;
+
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (!token) return;
+        const reply = `👥 Подписчиков: ${subs.length}\n${subs.join(", ")}`;
+        const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(reply)}`;
+        require("https").get(url).on("error", () => {});
+      }
+    } catch (err) {
+      console.error("Telegram webhook error:", err.message);
+    }
   });
 
   return router;

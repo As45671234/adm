@@ -1,40 +1,48 @@
 const https = require("https");
+const { getSubscribers } = require("./telegramSubscribers");
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+function sendToChat(chatId, text) {
+  const message = encodeURIComponent(text);
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${chatId}&text=${message}&parse_mode=HTML`;
+
+  return new Promise((resolve) => {
+    https.get(url, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); } catch { resolve({ ok: false }); }
+      });
+    }).on("error", (err) => {
+      console.error(`Telegram send error to ${chatId}:`, err.message);
+      resolve({ ok: false, error: err.message });
+    });
+  });
+}
 
 async function sendTelegramMessage(text) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  if (!TELEGRAM_BOT_TOKEN) {
     console.warn("Telegram credentials not configured");
     return { ok: false, error: "Telegram not configured" };
   }
 
-  try {
-    const message = encodeURIComponent(text);
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${message}&parse_mode=HTML`;
-
-    return new Promise((resolve, reject) => {
-      https.get(url, (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          try {
-            const parsed = JSON.parse(data);
-            resolve(parsed);
-          } catch (e) {
-            reject(e);
-          }
-        });
-      }).on("error", (err) => {
-        reject(err);
-      });
-    });
-  } catch (err) {
-    console.error("Telegram error:", err.message);
-    return { ok: false, error: err.message };
+  const subscribers = getSubscribers();
+  if (subscribers.length === 0) {
+    console.warn("No Telegram subscribers yet");
+    return { ok: false, error: "No subscribers" };
   }
+
+  const results = await Promise.allSettled(
+    subscribers.map((chatId) => sendToChat(chatId, text))
+  );
+
+  const failed = results.filter((r) => r.status === "rejected" || r.value?.ok === false);
+  if (failed.length > 0) {
+    console.warn(`Telegram: ${failed.length}/${subscribers.length} messages failed`);
+  }
+
+  return { ok: true, sent: subscribers.length, failed: failed.length };
 }
 
 
