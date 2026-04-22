@@ -132,6 +132,7 @@ export interface HomeContent {
     whatsappMessage: string;
     instagramUrl: string;
     instagramLabel: string;
+    tiktokUrl?: string;
   };
 }
 

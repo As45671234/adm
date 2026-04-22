@@ -16,41 +16,78 @@ import { getUnitPriceForMode } from './services/pricing';
 type ToastState = { msg: string; id: number; open: boolean } | null;
 
 const SITE_URL = 'https://adm-mebel.kz';
+const DEFAULT_OG_IMAGE = 'https://adm-mebel.kz/logos/logoadm.jpg';
 
-const SEO_BY_ROUTE: Record<string, { title: string; description: string; robots?: string }> = {
+type RouteSeo = {
+  title: string;
+  description: string;
+  robots?: string;
+  ogType?: 'website' | 'article';
+  image?: string;
+  keywords?: string;
+};
+
+const SEO_BY_ROUTE: Record<string, RouteSeo> = {
   '/': {
     title: 'ADM Mebel Astana - Корпусная мебель на заказ в Астане',
     description: 'Корпусная мебель на заказ в Астане: кухни, шкафы, гардеробные и ТВ-зоны. Собственное производство, индивидуальный проект и точные сроки.',
     robots: 'index,follow,max-image-preview:large',
+    ogType: 'website',
+    image: DEFAULT_OG_IMAGE,
+    keywords: 'мебель в Астане, мебель на заказ Астана, корпусная мебель Астана, кухни на заказ Астана, шкафы на заказ Астана, гардеробные Астана, прихожие на заказ Астана, ТВ зоны на заказ, мебельное производство Астана, ADM Mebel Astana',
   },
   '/catalog': {
     title: 'Каталог мебели на заказ - ADM Mebel Astana',
     description: 'Каталог корпусной мебели ADM Mebel: кухни, шкафы, гардеробные, прихожие и ТВ-зоны. Рассчитайте стоимость и отправьте заявку онлайн.',
     robots: 'index,follow,max-image-preview:large',
+    ogType: 'website',
+    image: DEFAULT_OG_IMAGE,
+    keywords: 'каталог мебели Астана, мебель в Астане, заказать мебель в Астане, цены на мебель Астана, кухни Астана, шкафы Астана, гардеробные Астана, корпусная мебель на заказ',
   },
   '/cart': {
     title: 'Оформление заявки - ADM Mebel Astana',
     description: 'Оформите заявку на мебель по вашим параметрам. Укажите контактные данные и получите обратную связь от менеджера ADM Mebel.',
     robots: 'noindex,follow',
+    ogType: 'website',
+    image: DEFAULT_OG_IMAGE,
+    keywords: 'заказать мебель в Астане, заявка на мебель Астана, расчет мебели Астана',
   },
   '/reviews': {
     title: 'Отзывы клиентов - ADM Mebel Astana',
     description: 'Реальные отзывы клиентов ADM Mebel: текстовые и видео-отзывы о корпусной мебели на заказ в Астане.',
     robots: 'index,follow,max-image-preview:large',
+    ogType: 'article',
+    image: DEFAULT_OG_IMAGE,
+    keywords: 'отзывы мебель Астана, отзывы о мебели на заказ, ADM Mebel отзывы, мебель в Астане отзывы',
   },
   '/admin': {
     title: 'Вход в админ-панель - ADM Mebel',
     description: 'Административный раздел сайта ADM Mebel.',
     robots: 'noindex,nofollow',
+    ogType: 'website',
+    image: DEFAULT_OG_IMAGE,
+    keywords: 'admin',
   },
 };
 
-const SeoManager: React.FC = () => {
+const SeoManager: React.FC<{
+  categories: Category[];
+  reviews: Review[];
+  homeContent: HomeContent | null;
+  whatsappUrl: string;
+}> = ({ categories, reviews, homeContent, whatsappUrl }) => {
   const { pathname } = useLocation();
 
   useEffect(() => {
     const seo = SEO_BY_ROUTE[pathname] || SEO_BY_ROUTE['/'];
     const canonicalUrl = `${SITE_URL}${pathname === '/' ? '/' : pathname}`;
+    const contacts = homeContent?.contacts;
+    const phone = String(contacts?.phoneValue || '+77074064499');
+    const address = String(contacts?.addressValue || 'Жетиген 37, Astana, Kazakhstan');
+    const instagram = String(contacts?.instagramUrl || 'https://www.instagram.com/adm_mebel_astana/');
+    const tiktok = String(contacts?.tiktokUrl || 'https://www.tiktok.com/');
+    const [streetAddress = address, addressLocality = 'Астана', addressCountry = 'KZ'] = address.split(',').map((item) => item.trim());
+    const image = seo.image || DEFAULT_OG_IMAGE;
 
     document.title = seo.title;
 
@@ -75,12 +112,186 @@ const SeoManager: React.FC = () => {
     };
 
     ensureMeta('description', seo.description);
+    ensureMeta('keywords', seo.keywords || SEO_BY_ROUTE['/'].keywords || 'мебель в Астане, мебель на заказ Астана, корпусная мебель Астана');
     ensureMeta('robots', seo.robots || 'index,follow,max-image-preview:large');
+    ensureMeta('googlebot', seo.robots || 'index,follow,max-image-preview:large');
     ensureMeta('twitter:title', seo.title);
     ensureMeta('twitter:description', seo.description);
+    ensureMeta('twitter:image', image);
     ensureOgMeta('og:title', seo.title);
     ensureOgMeta('og:description', seo.description);
     ensureOgMeta('og:url', canonicalUrl);
+    ensureOgMeta('og:type', seo.ogType || 'website');
+    ensureOgMeta('og:image', image);
+
+    let localBusinessScript = document.getElementById('adm-local-business-jsonld') as HTMLScriptElement | null;
+    if (!localBusinessScript) {
+      localBusinessScript = document.createElement('script');
+      localBusinessScript.id = 'adm-local-business-jsonld';
+      localBusinessScript.type = 'application/ld+json';
+      document.head.appendChild(localBusinessScript);
+    }
+
+    localBusinessScript.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': ['FurnitureStore', 'LocalBusiness'],
+      name: 'ADM Mebel Astana',
+      description: 'Корпусная мебель на заказ в Астане',
+      url: SITE_URL,
+      telephone: phone,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress,
+        addressLocality,
+        addressCountry,
+      },
+      openingHoursSpecification: {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        opens: '09:00',
+        closes: '20:00',
+      },
+      logo: DEFAULT_OG_IMAGE,
+      image: DEFAULT_OG_IMAGE,
+      sameAs: [whatsappUrl.split('?')[0], instagram, tiktok].filter(Boolean),
+    });
+
+    const websiteSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'ADM Mebel Astana',
+      url: SITE_URL,
+      inLanguage: 'ru-KZ',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${SITE_URL}/catalog?search={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    };
+
+    let pageSchema: Record<string, any> | null = null;
+
+    if (pathname === '/catalog') {
+      pageSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Каталог мебели на заказ',
+        url: canonicalUrl,
+        description: seo.description,
+        inLanguage: 'ru-KZ',
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: categories.slice(0, 30).map((category, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: category.title,
+            url: `${SITE_URL}/catalog?cat=${encodeURIComponent(category.id)}`,
+          })),
+        },
+      };
+    }
+
+    if (pathname === '/reviews') {
+      const publishedReviews = reviews.filter((review) => review.rating > 0);
+      const avgRating = publishedReviews.length > 0
+        ? Math.round((publishedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / publishedReviews.length) * 10) / 10
+        : null;
+
+      pageSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Отзывы клиентов ADM Mebel',
+        url: canonicalUrl,
+        description: seo.description,
+        inLanguage: 'ru-KZ',
+        ...(avgRating
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: avgRating,
+                bestRating: 5,
+                worstRating: 1,
+                ratingCount: publishedReviews.length,
+              },
+            }
+          : {}),
+        mainEntity: publishedReviews.slice(0, 20).map((review) => ({
+          '@type': 'Review',
+          reviewRating: {
+            '@type': 'Rating',
+            ratingValue: review.rating,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          author: {
+            '@type': 'Person',
+            name: review.authorName,
+          },
+          reviewBody: review.text,
+        })),
+      };
+    }
+
+    if (pathname === '/') {
+      pageSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Корпусная мебель на заказ в Астане',
+        url: canonicalUrl,
+        description: seo.description,
+        inLanguage: 'ru-KZ',
+      };
+    }
+
+    let pageSchemaScript = document.getElementById('adm-page-jsonld') as HTMLScriptElement | null;
+    if (!pageSchemaScript) {
+      pageSchemaScript = document.createElement('script');
+      pageSchemaScript.id = 'adm-page-jsonld';
+      pageSchemaScript.type = 'application/ld+json';
+      document.head.appendChild(pageSchemaScript);
+    }
+
+    const schemas = [websiteSchema];
+    if (pageSchema) schemas.push(pageSchema);
+    pageSchemaScript.textContent = JSON.stringify(schemas);
+
+    const breadcrumbs: Record<string, { name: string; path: string }[]> = {
+      '/catalog': [
+        { name: 'Главная', path: '/' },
+        { name: 'Каталог', path: '/catalog' },
+      ],
+      '/reviews': [
+        { name: 'Главная', path: '/' },
+        { name: 'Отзывы', path: '/reviews' },
+      ],
+      '/cart': [
+        { name: 'Главная', path: '/' },
+        { name: 'Заявка', path: '/cart' },
+      ],
+    };
+
+    let breadcrumbScript = document.getElementById('adm-breadcrumb-jsonld') as HTMLScriptElement | null;
+    if (!breadcrumbScript) {
+      breadcrumbScript = document.createElement('script');
+      breadcrumbScript.id = 'adm-breadcrumb-jsonld';
+      breadcrumbScript.type = 'application/ld+json';
+      document.head.appendChild(breadcrumbScript);
+    }
+
+    if (breadcrumbs[pathname]) {
+      breadcrumbScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbs[pathname].map((item, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: item.name,
+          item: `${SITE_URL}${item.path}`,
+        })),
+      });
+    } else {
+      breadcrumbScript.textContent = '';
+    }
 
     let canonical = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
@@ -89,7 +300,7 @@ const SeoManager: React.FC = () => {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', canonicalUrl);
-  }, [pathname]);
+  }, [pathname, categories, reviews, homeContent, whatsappUrl]);
 
   return null;
 };
@@ -127,40 +338,10 @@ const App: React.FC = () => {
     () => String(homeContent?.contacts?.instagramUrl || import.meta.env.VITE_INSTAGRAM_URL || 'https://www.instagram.com/adm_mebel_astana/').trim(),
     [homeContent]
   );
-
-  useEffect(() => {
-    const script = document.getElementById('adm-local-business-jsonld');
-    if (!script) return;
-
-    const contacts = homeContent?.contacts;
-    const phone = String(contacts?.phoneValue || '+77074064499');
-    const address = String(contacts?.addressValue || 'Жетиген 37, Astana, Kazakhstan');
-    const instagram = String(contacts?.instagramUrl || 'https://www.instagram.com/adm_mebel_astana/');
-    const [streetAddress = address, addressLocality = 'Астана', addressCountry = 'KZ'] = address.split(',').map((item) => item.trim());
-
-    script.textContent = JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'LocalBusiness',
-      name: 'ADM Mebel Astana',
-      description: 'Корпусная мебель на заказ в Астане',
-      url: 'https://adm-mebel.kz',
-      telephone: phone,
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress,
-        addressLocality,
-        addressCountry,
-      },
-      openingHoursSpecification: {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        opens: '09:00',
-        closes: '20:00',
-      },
-      logo: 'https://adm-mebel.kz/logos/logoadm.jpg',
-      sameAs: [whatsappUrl.split('?')[0], instagram].filter(Boolean),
-    }, null, 2);
-  }, [homeContent, whatsappUrl]);
+  const tiktokUrl = useMemo(
+    () => String(homeContent?.contacts?.tiktokUrl || import.meta.env.VITE_TIKTOK_URL || 'https://www.tiktok.com/').trim(),
+    [homeContent]
+  );
 
   useEffect(() => {
     const handler = () => {
@@ -310,7 +491,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <SeoManager />
+      <SeoManager categories={categories} reviews={reviews} homeContent={homeContent} whatsappUrl={whatsappUrl} />
       <ScrollToTop />
       <div className="flex flex-col min-h-screen relative overflow-x-hidden">
         <Header
@@ -396,6 +577,18 @@ const App: React.FC = () => {
             aria-label="WhatsApp"
           >
             <i className="fab fa-whatsapp text-2xl"></i>
+          </a>
+        ) : null}
+        {tiktokUrl ? (
+          <a
+            href={tiktokUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105"
+            style={{ background: '#111111' }}
+            aria-label="TikTok"
+          >
+            <i className="fab fa-tiktok text-2xl"></i>
           </a>
         ) : null}
       </div>
