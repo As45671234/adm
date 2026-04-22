@@ -360,10 +360,11 @@ const App: React.FC = () => {
     () => pickFirstValidUrl(
       homeContent?.contacts?.tiktokUrl,
       import.meta.env.VITE_TIKTOK_URL,
-      'https://www.tiktok.com/'
+      'https://www.tiktok.com/@adm_mebel_astana'
     ),
     [homeContent]
   );
+  const tiktokHref = tiktokUrl || 'https://www.tiktok.com/@adm_mebel_astana';
 
   useEffect(() => {
     const handler = () => {
@@ -601,18 +602,17 @@ const App: React.FC = () => {
             <i className="fab fa-whatsapp text-2xl"></i>
           </a>
         ) : null}
-        {tiktokUrl ? (
-          <a
-            href={tiktokUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105"
-            style={{ background: '#111111' }}
-            aria-label="TikTok"
-          >
-            <i className="fab fa-tiktok text-2xl"></i>
-          </a>
-        ) : null}
+        <a
+          href={tiktokHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105"
+          style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.2)' }}
+          aria-label="TikTok"
+          title="TikTok"
+        >
+          <i className="fab fa-tiktok text-2xl"></i>
+        </a>
       </div>
 </Router>
   );
