@@ -18,6 +18,20 @@ type ToastState = { msg: string; id: number; open: boolean } | null;
 const SITE_URL = 'https://adm-mebel.kz';
 const DEFAULT_OG_IMAGE = 'https://adm-mebel.kz/logos/logoadm.jpg';
 
+const normalizeHttpUrl = (value: unknown): string => {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : '';
+};
+
+const pickFirstValidUrl = (...candidates: unknown[]): string => {
+  for (const candidate of candidates) {
+    const normalized = normalizeHttpUrl(candidate);
+    if (normalized) return normalized;
+  }
+  return '';
+};
+
 type RouteSeo = {
   title: string;
   description: string;
@@ -84,8 +98,8 @@ const SeoManager: React.FC<{
     const contacts = homeContent?.contacts;
     const phone = String(contacts?.phoneValue || '+77074064499');
     const address = String(contacts?.addressValue || 'Жетиген 37, Astana, Kazakhstan');
-    const instagram = String(contacts?.instagramUrl || 'https://www.instagram.com/adm_mebel_astana/');
-    const tiktok = String(contacts?.tiktokUrl || 'https://www.tiktok.com/');
+    const instagram = pickFirstValidUrl(contacts?.instagramUrl, 'https://www.instagram.com/adm_mebel_astana/');
+    const tiktok = pickFirstValidUrl(contacts?.tiktokUrl, 'https://www.tiktok.com/');
     const [streetAddress = address, addressLocality = 'Астана', addressCountry = 'KZ'] = address.split(',').map((item) => item.trim());
     const image = seo.image || DEFAULT_OG_IMAGE;
 
@@ -335,11 +349,19 @@ const App: React.FC = () => {
     [whatsappPhone, whatsappText]
   );
   const instagramUrl = useMemo(
-    () => String(homeContent?.contacts?.instagramUrl || import.meta.env.VITE_INSTAGRAM_URL || 'https://www.instagram.com/adm_mebel_astana/').trim(),
+    () => pickFirstValidUrl(
+      homeContent?.contacts?.instagramUrl,
+      import.meta.env.VITE_INSTAGRAM_URL,
+      'https://www.instagram.com/adm_mebel_astana/'
+    ),
     [homeContent]
   );
   const tiktokUrl = useMemo(
-    () => String(homeContent?.contacts?.tiktokUrl || import.meta.env.VITE_TIKTOK_URL || 'https://www.tiktok.com/').trim(),
+    () => pickFirstValidUrl(
+      homeContent?.contacts?.tiktokUrl,
+      import.meta.env.VITE_TIKTOK_URL,
+      'https://www.tiktok.com/'
+    ),
     [homeContent]
   );
 
